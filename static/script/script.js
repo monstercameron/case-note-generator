@@ -109,10 +109,17 @@ document.addEventListener("DOMContentLoaded", () => {
   
         console.log("Files read:", fileContents.length);
   
+        // Get the selected date and format it as mmddyyyy
+        const selectedDate = new Date(elements.datePicker.value);
+        const formattedDate = `${(selectedDate.getMonth() + 1).toString().padStart(2, '0')}${selectedDate.getDate().toString().padStart(2, '0')}${selectedDate.getFullYear()}`;
+
         const response = await fetch("/generate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt: fileContents.join("\n\n") }),
+          body: JSON.stringify({
+            prompt: fileContents.join("\n\n"),
+            date: formattedDate
+          }),
         });
   
         if (!response.ok) {

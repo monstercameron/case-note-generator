@@ -7,6 +7,9 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"github.com/joho/godotenv"
 	openai "github.com/sashabaranov/go-openai"
@@ -14,6 +17,17 @@ import (
 
 type GenerateRequest struct {
 	Prompt string `json:"prompt"`
+	Date   string `json:"date"`
+}
+
+// logMiddleware creates a middleware that logs all API calls
+func logMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		startTime := time.Now()
+		log.Printf("Started %s %s", r.Method, r.URL.Path)
+		next.ServeHTTP(w, r)
+		log.Printf("Completed %s %s in %v", r.Method, r.URL.Path, time.Since(startTime))
+	}
 }
 
 func main() {
@@ -40,13 +54,13 @@ func main() {
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("GET /static/", http.StripPrefix("/static/", fs))
 
-	// Define routes using the new style
-	http.HandleFunc("GET /", indexHandler) // GET /
-	http.HandleFunc("POST /generate", func(w http.ResponseWriter, r *http.Request) {
-		generateHandler(w, r, client, openaiAPIModel, string(systemPrompt)) // POST /generate
-	})
-	http.HandleFunc("GET /systemprompt", systemPromptHandler)      // GET /systemprompt
-	http.HandleFunc("POST /systemprompt", systemPromptPostHandler) // POST /systemprompt
+	// Define routes using the new style with logging middleware
+	http.HandleFunc("GET /", logMiddleware(indexHandler))
+	http.HandleFunc("POST /generate", logMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		generateHandler(w, r, client, openaiAPIModel, string(systemPrompt))
+	}))
+	http.HandleFunc("GET /systemprompt", logMiddleware(systemPromptHandler))
+	http.HandleFunc("POST /systemprompt", logMiddleware(systemPromptPostHandler))
 
 	// Get the PORT from environment variables, default to 8080 if not set
 	port := os.Getenv("PORT")
@@ -54,8 +68,38 @@ func main() {
 		port = "8080"
 	}
 
-	fmt.Printf("Server is running on :%s\n", port)
-	http.ListenAndServe(":"+port, nil)
+	// Create a new server
+	srv := &http.Server{
+		Addr:    ":" + port,
+		Handler: nil, // Use the default ServeMux
+	}
+
+	// Start the server in a goroutine
+	go func() {
+		fmt.Printf("Server is running on :%s\n", port)
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("ListenAndServe(): %v", err)
+		}
+	}()
+
+	// Set up channel to listen for interrupt signal
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Block until we receive a signal
+	<-quit
+	log.Println("Shutting down server...")
+
+	// Create a deadline for server shutdown
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Attempt to gracefully shut down the server
+	if err := srv.Shutdown(ctx); err != nil {
+		log.Fatal("Server forced to shutdown:", err)
+	}
+
+	log.Println("Server exiting")
 }
 
 // generateHandler handles the generation of completions
@@ -67,8 +111,11 @@ func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Clie
 		return
 	}
 
+	prePrompt := fmt.Sprintf("Create Case notes for %s. Generate a Jira comment based on the following information:", req.Date)
+	prompt := prePrompt + "\n\n" + req.Prompt
+
 	// Get completion from OpenAI
-	completion, err := getCompletion(client, model, req.Prompt, systemPrompt)
+	completion, err := getCompletion(client, model, prompt, systemPrompt)
 	if err != nil {
 		http.Error(w, "Error getting completion: "+err.Error(), http.StatusInternalServerError)
 		return
