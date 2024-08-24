@@ -8,8 +8,8 @@
     <link rel="stylesheet" href="/static/style/style.css"> <!-- Attach CSS -->
     <style>
         /* UKG Colors */
-        .ukg-blue { background-color: #0072C6; }
-        .ukg-light-blue { background-color: #E6F2FF; }
+        .ukg-green { background-color: #00866E; }
+        .ukg-light-green { background-color: #E6F4F1; }
         .ukg-gray { background-color: #F5F5F5; }
 
         .date-picker-container {
@@ -36,7 +36,7 @@
             margin-left: 10px;
             padding: 10px 20px;
             font-size: 16px;
-            background-color: #3498db;
+            background-color: #00866E;
             color: white;
             border: none;
             border-radius: 5px;
@@ -45,7 +45,7 @@
         }
 
         .generate-button:hover {
-            background-color: #2980b9;
+            background-color: #006B58;
         }
 
         #output {
@@ -68,7 +68,7 @@
     </style>
 </head>
 <body class="bg-ukg-gray">
-    <nav class="ukg-blue p-4">
+    <nav class="ukg-green p-4">
         <h1 class="text-white text-3xl font-bold text-center">Case Notes</h1>
     </nav>
     <div class="container mx-auto p-4">
@@ -77,7 +77,7 @@
             <p class="text-lg text-gray-900">Please drag and drop your text files below or click to attach them.</p>
         </section>
         <section class="mb-6">
-            <div class="border-2 border-dashed border-ukg-blue p-4 rounded-lg text-center">
+            <div class="border-2 border-dashed border-ukg-green p-4 rounded-lg text-center">
                 <p class="text-lg text-gray-800">Drag and drop your text files here or <input id="fileInfo" type="file" class="hidden" id="fileInput" multiple /></p>
                 <label for="fileInput" class="cursor-pointer text-blue-600 underline text-lg">click to attach</label>
             </div>
