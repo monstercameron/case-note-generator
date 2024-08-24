@@ -42,8 +42,14 @@ func main() {
 	http.HandleFunc("GET /systemprompt", systemPromptHandler)      // GET /systemprompt
 	http.HandleFunc("POST /systemprompt", systemPromptPostHandler) // POST /systemprompt
 
-	fmt.Println("Server is running on :8080")
-	http.ListenAndServe(":8080", nil)
+	// Get the PORT from environment variables, default to 8080 if not set
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Printf("Server is running on :%s\n", port)
+	http.ListenAndServe(":"+port, nil)
 }
 
 // generateHandler handles the generation of completions
