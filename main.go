@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -19,7 +20,7 @@ type GenerateRequest struct {
 func main() {
 	err := godotenv.Load()
 	if err != nil {
-	  log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env file")
 	}
 	client := openai.NewClient("your token")
 
@@ -30,6 +31,12 @@ func main() {
 		log.Fatal("OPENAI_API_KEY or OPENAI_API_MODEL is not set in the environment variables")
 	}
 
+	// Read system prompt from file
+	systemPrompt, err := ioutil.ReadFile("static/document/system.prompt")
+	if err != nil {
+		log.Fatal("Error reading system prompt file:", err)
+	}
+
 	// handle static files
 	fs := http.FileServer(http.Dir("static"))
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
@@ -37,7 +44,7 @@ func main() {
 	// Define routes using the new style
 	http.HandleFunc("GET /", indexHandler) // GET /
 	http.HandleFunc("POST /generate", func(w http.ResponseWriter, r *http.Request) {
-		generateHandler(w, r, client, openaiAPIModel) // POST /generate
+		generateHandler(w, r, client, openaiAPIModel, string(systemPrompt)) // POST /generate
 	})
 	http.HandleFunc("GET /systemprompt", systemPromptHandler)      // GET /systemprompt
 	http.HandleFunc("POST /systemprompt", systemPromptPostHandler) // POST /systemprompt
@@ -53,7 +60,7 @@ func main() {
 }
 
 // generateHandler handles the generation of completions
-func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Client, model string) {
+func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Client, model string, systemPrompt string) {
 	var req GenerateRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
@@ -62,7 +69,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Clie
 	}
 
 	// Get completion from OpenAI
-	completion, err := getCompletion(client, model, req.Prompt)
+	completion, err := getCompletion(client, model, req.Prompt, systemPrompt)
 	if err != nil {
 		http.Error(w, "Error getting completion: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -75,12 +82,16 @@ func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Clie
 }
 
 // getCompletion retrieves a completion from the OpenAI API
-func getCompletion(client *openai.Client, model string, prompt string) (string, error) {
+func getCompletion(client *openai.Client, model string, prompt string, systemPrompt string) (string, error) {
 	ctx := context.Background()
 	resp, err := client.CreateChatCompletion(ctx,
 		openai.ChatCompletionRequest{
 			Model: model,
 			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: systemPrompt,
+				},
 				{
 					Role:    openai.ChatMessageRoleUser,
 					Content: prompt,
@@ -100,15 +111,73 @@ func getCompletion(client *openai.Client, model string, prompt string) (string, 
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "index.html") // Serve index.html
+	if r.URL.Path != "/" {
+		http.NotFound(w, r)
+		return
+	}
+	http.ServeFile(w, r, "static/index.html")
 }
 
 func systemPromptHandler(w http.ResponseWriter, r *http.Request) {
-	// Handle GET logic here
-	fmt.Fprintln(w, "System prompt GET endpoint hit")
+	// Read the system prompt file
+	systemPrompt, err := ioutil.ReadFile("static/document/system.prompt")
+	if err != nil {
+		http.Error(w, "Error reading system prompt file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Create a response struct
+	response := struct {
+		SystemPrompt string `json:"systemPrompt"`
+	}{
+		SystemPrompt: string(systemPrompt),
+	}
+
+	// Set the content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode and send the JSON response
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding JSON response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
-	// Handle POST logic here
-	fmt.Fprintln(w, "System prompt POST endpoint hit")
+	// Define a struct to parse the incoming JSON
+	var requestBody struct {
+		Prompt string `json:"prompt"`
+	}
+
+	// Parse the JSON request body
+	err := json.NewDecoder(r.Body).Decode(&requestBody)
+	if err != nil {
+		http.Error(w, "Error parsing JSON request: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Write the new prompt to the file
+	err = ioutil.WriteFile("static/document/system.prompt", []byte(requestBody.Prompt), 0644)
+	if err != nil {
+		http.Error(w, "Error writing to system prompt file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Prepare the response
+	response := struct {
+		Status  string `json:"status"`
+		Message string `json:"message"`
+	}{
+		Status:  "success",
+		Message: "System prompt updated successfully",
+	}
+
+	// Set the content type to JSON
+	w.Header().Set("Content-Type", "application/json")
+
+	// Encode and send the JSON response
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		http.Error(w, "Error encoding JSON response: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
