@@ -5,12 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Case Notes</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style/style.css"> <!-- Updated path -->
+    <link rel="stylesheet" href="/static/style/style.css"> <!-- Attach CSS -->
     <style>
         /* UKG Colors */
         .ukg-blue { background-color: #0072C6; }
         .ukg-light-blue { background-color: #E6F2FF; }
         .ukg-gray { background-color: #F5F5F5; }
+
+        .date-picker-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .date-picker {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: 2px solid #3498db;
+            border-radius: 5px;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .date-picker:focus {
+            border-color: #2980b9;
+        }
+
+        .generate-button {
+            margin-left: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .generate-button:hover {
+            background-color: #2980b9;
+        }
+
+        #output {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            padding-right: 40px; /* Add space for the button */
+        }
+
+        .output-container {
+            position: relative;
+            height: 500px;
+        }
+
+        #copyButton {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 10;
+        }
     </style>
 </head>
 <body class="bg-ukg-gray">
@@ -24,17 +78,28 @@
         </section>
         <section class="mb-6">
             <div class="border-2 border-dashed border-ukg-blue p-4 rounded-lg text-center">
-                <p id="fileInfo" class="text-lg text-gray-800">Drag and drop your text files here or <input type="file" class="hidden" id="fileInput" multiple /></p>
+                <p class="text-lg text-gray-800">Drag and drop your text files here or <input id="fileInfo" type="file" class="hidden" id="fileInput" multiple /></p>
                 <label for="fileInput" class="cursor-pointer text-blue-600 underline text-lg">click to attach</label>
             </div>
         </section>
+        <div class="date-picker-container">
+            <input type="date" id="datePicker" class="date-picker">
+            <button id="generateJiraComment" class="generate-button">Generate Jira Comment</button>
+        </div>
         <section>
             <h2 class="text-2xl font-semibold text-gray-800">Jira Comment</h2>
-            <div class="border border-gray-300 rounded-lg p-4 h-48 overflow-auto">
-                <pre id="output" class="text-lg text-gray-900"></pre>
+            <div class="output-container border border-gray-300 rounded-lg p-4">
+                <div class="overflow-auto h-full">
+                    <pre id="output" class="text-lg text-gray-900"></pre>
+                </div>
+                <button id="copyButton" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                    </svg>
+                </button>
             </div>
         </section>
     </div>
-    <script src="/static/script/script.js"></script> <!-- Updated path -->
+    <script src="/static/script/script.js"></script>
 </body>
 </html>

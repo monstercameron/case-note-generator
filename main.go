@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 
-	openai "github.com/sashabaranov/go-openai"
 	"github.com/joho/godotenv"
+	openai "github.com/sashabaranov/go-openai"
 )
 
 type GenerateRequest struct {
@@ -22,7 +21,6 @@ func main() {
 	if err != nil {
 		log.Fatal("Error loading .env file")
 	}
-	client := openai.NewClient("your token")
 
 	// Get the OpenAI API key and model from environment variables
 	openaiAPIKey := os.Getenv("OPENAI_API_KEY")
@@ -30,16 +28,17 @@ func main() {
 	if openaiAPIKey == "" || openaiAPIModel == "" {
 		log.Fatal("OPENAI_API_KEY or OPENAI_API_MODEL is not set in the environment variables")
 	}
+	client := openai.NewClient(openaiAPIKey)
 
 	// Read system prompt from file
-	systemPrompt, err := ioutil.ReadFile("static/document/system.prompt")
+	systemPrompt, err := os.ReadFile("static/document/system.prompt")
 	if err != nil {
 		log.Fatal("Error reading system prompt file:", err)
 	}
 
 	// handle static files
 	fs := http.FileServer(http.Dir("static"))
-	http.Handle("/static/", http.StripPrefix("/static/", fs))
+	http.Handle("GET /static/", http.StripPrefix("/static/", fs))
 
 	// Define routes using the new style
 	http.HandleFunc("GET /", indexHandler) // GET /
@@ -120,7 +119,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 
 func systemPromptHandler(w http.ResponseWriter, r *http.Request) {
 	// Read the system prompt file
-	systemPrompt, err := ioutil.ReadFile("static/document/system.prompt")
+	systemPrompt, err := os.ReadFile("static/document/system.prompt")
 	if err != nil {
 		http.Error(w, "Error reading system prompt file: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -157,7 +156,7 @@ func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Write the new prompt to the file
-	err = ioutil.WriteFile("static/document/system.prompt", []byte(requestBody.Prompt), 0644)
+	err = os.WriteFile("static/document/system.prompt", []byte(requestBody.Prompt), 0644)
 	if err != nil {
 		http.Error(w, "Error writing to system prompt file: "+err.Error(), http.StatusInternalServerError)
 		return

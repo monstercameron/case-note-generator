@@ -9,14 +9,17 @@ This project is a web server that converts Markdown notes into Jira Wiki Notatio
 - [Installation](#installation)
 - [Usage](#usage)
 - [API Endpoints](#api-endpoints)
+- [Frontend Functionality](#frontend-functionality)
 - [License](#license)
 
 ## Features
 
 - Convert Markdown notes to Jira Wiki Notation.
 - Generate text completions using OpenAI's API.
-- Serve static files (e.g., HTML, CSS).
-- Handle GET and POST requests for system prompts.
+- Serve static files (HTML, CSS, JavaScript).
+- Handle file uploads for text (.txt) and Markdown (.md) files.
+- Date selection for note generation.
+- Copy generated content to clipboard.
 
 ## Requirements
 
@@ -52,6 +55,12 @@ This project is a web server that converts Markdown notes into Jira Wiki Notatio
 
 2. Open your browser and navigate to `http://localhost:8080` to access the application.
 
+3. Use the web interface to:
+   - Upload text or Markdown files
+   - Select a date
+   - Generate Jira comments
+   - Copy generated content to clipboard
+
 ## API Endpoints
 
 - **GET /**: Serves the `index.html` file.
@@ -71,6 +80,16 @@ This project is a web server that converts Markdown notes into Jira Wiki Notatio
 
 - **GET /systemprompt**: Returns a message indicating the GET endpoint was hit.
 - **POST /systemprompt**: Returns a message indicating the POST endpoint was hit.
+
+## Frontend Functionality
+
+The application includes a JavaScript file (`static/script/script.js`) that provides the following features:
+
+- Drag and drop file upload
+- File selection via input
+- Date selection
+- Jira comment generation
+- Copying generated content to clipboard
 
 ## License
 
