@@ -9,7 +9,9 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime"
+	"strings"
 	"syscall"
 	"time"
 
@@ -22,6 +24,11 @@ import (
 type GenerateRequest struct {
 	Prompt string `json:"prompt"`
 	Date   string `json:"date"`
+}
+
+// SummaryRequest represents the structure of the incoming JSON request for summary generation.
+type SummaryRequest struct {
+	Prompt string `json:"prompt"`
 }
 
 // logMiddleware creates a middleware that logs all API calls.
@@ -59,7 +66,13 @@ func main() {
 	log.Println("OpenAI client initialized")
 
 	// Read system prompt from file
-	systemPrompt, err := os.ReadFile("static/document/system.prompt")
+	systemPromptNotes, err := os.ReadFile("static/document/notes.prompt")
+	if err != nil {
+		log.Fatal("Error reading system prompt file:", err)
+	}
+	log.Println("System prompt loaded successfully")
+
+	systemPromptSummary, err := os.ReadFile("static/document/summary.prompt")
 	if err != nil {
 		log.Fatal("Error reading system prompt file:", err)
 	}
@@ -72,13 +85,18 @@ func main() {
 	// Define routes using the new style with logging middleware
 	http.HandleFunc("GET /", logMiddleware(indexHandler))
 	http.HandleFunc("POST /generate", logMiddleware(func(w http.ResponseWriter, r *http.Request) {
-		generateHandler(w, r, client, openaiAPIModel, string(systemPrompt))
+		generateHandler(w, r, client, openaiAPIModel, string(systemPromptNotes))
 	}))
 	http.HandleFunc("GET /systemprompt", logMiddleware(systemPromptHandler))
 	http.HandleFunc("POST /systemprompt", logMiddleware(systemPromptPostHandler))
 
 	// Add the health check endpoint
 	http.HandleFunc("GET /health", logMiddleware(healthHandler))
+
+	// Add the new summary endpoint
+	http.HandleFunc("POST /summary", logMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		summaryHandler(w, r, client, openaiAPIModel, string(systemPromptSummary))
+	}))
 
 	// Get the PORT from environment variables, default to 8080 if not set
 	port := os.Getenv("PORT")
@@ -242,32 +260,30 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 // systemPromptHandler handles GET requests for the system prompt.
 // It reads the system prompt from a file and returns it as a JSON response.
 func systemPromptHandler(w http.ResponseWriter, r *http.Request) {
-	// Read the system prompt file
-	systemPrompt, err := os.ReadFile("static/document/system.prompt")
-	if err != nil {
-		log.Printf("Error reading system prompt file: %v", err)
-		http.Error(w, "Error reading system prompt file: "+err.Error(), http.StatusInternalServerError)
-		return
+	fileName := r.URL.Query().Get("file")
+	if fileName != "" {
+		// Return content of specific file
+		content, err := os.ReadFile(filepath.Join("static", "document", fileName))
+		if err != nil {
+			http.Error(w, "File not found", http.StatusNotFound)
+			return
+		}
+		w.Header().Set("Content-Type", "text/plain")
+		w.Write(content)
+	} else {
+		// Return list of *.prompt files
+		files, err := filepath.Glob(filepath.Join("static", "document", "*.prompt"))
+		if err != nil {
+			http.Error(w, "Error reading directory", http.StatusInternalServerError)
+			return
+		}
+		fileList := make([]string, len(files))
+		for i, file := range files {
+			fileList[i] = filepath.Base(file)
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(fileList)
 	}
-	log.Println("System prompt read successfully")
-
-	// Create a response struct
-	response := struct {
-		SystemPrompt string `json:"systemPrompt"`
-	}{
-		SystemPrompt: string(systemPrompt),
-	}
-
-	// Set the content type to JSON
-	w.Header().Set("Content-Type", "application/json")
-
-	// Encode and send the JSON response
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding JSON response: %v", err)
-		http.Error(w, "Error encoding JSON response: "+err.Error(), http.StatusInternalServerError)
-		return
-	}
-	log.Println("System prompt sent successfully")
 }
 
 // systemPromptPostHandler handles POST requests to update the system prompt.
@@ -276,7 +292,8 @@ func systemPromptHandler(w http.ResponseWriter, r *http.Request) {
 func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
 	// Define a struct to parse the incoming JSON
 	var requestBody struct {
-		Prompt string `json:"prompt"`
+		Filename string `json:"filename"`
+		Prompt   string `json:"prompt"`
 	}
 
 	// Parse the JSON request body
@@ -286,16 +303,25 @@ func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error parsing JSON request: "+err.Error(), http.StatusBadRequest)
 		return
 	}
-	log.Println("Received new system prompt")
 
-	// Write the new prompt to the file
-	err = os.WriteFile("static/document/system.prompt", []byte(requestBody.Prompt), 0644)
-	if err != nil {
-		log.Printf("Error writing to system prompt file: %v", err)
-		http.Error(w, "Error writing to system prompt file: "+err.Error(), http.StatusInternalServerError)
+	// Validate filename
+	if !strings.HasSuffix(requestBody.Filename, ".prompt") {
+		http.Error(w, "Invalid filename: must end with .prompt", http.StatusBadRequest)
 		return
 	}
-	log.Println("System prompt updated successfully")
+
+	// Construct the full file path
+	filePath := filepath.Join("static", "document", requestBody.Filename)
+
+	// Write the new prompt to the file
+	err = os.WriteFile(filePath, []byte(requestBody.Prompt), 0644)
+	if err != nil {
+		log.Printf("Error writing to prompt file: %v", err)
+		http.Error(w, "Error writing to prompt file: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	log.Printf("Prompt file %s updated successfully", requestBody.Filename)
 
 	// Prepare the response
 	response := struct {
@@ -303,7 +329,7 @@ func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
 		Message string `json:"message"`
 	}{
 		Status:  "success",
-		Message: "System prompt updated successfully",
+		Message: fmt.Sprintf("Prompt file %s updated successfully", requestBody.Filename),
 	}
 
 	// Set the content type to JSON
@@ -315,7 +341,6 @@ func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Error encoding JSON response: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
-	log.Println("System prompt update response sent successfully")
 }
 
 // HealthData represents the structure of the health check response.
@@ -363,4 +388,44 @@ func healthHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Println("Health check response sent successfully")
+}
+
+// summaryHandler handles the generation of summaries.
+// It decodes the incoming JSON request, prepares the prompt,
+// calls the OpenAI API for completion, and returns the result as JSON.
+func summaryHandler(w http.ResponseWriter, r *http.Request, client *openai.Client, model string, systemPrompt string) {
+	var req SummaryRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		log.Printf("Error decoding summary request body: %v", err)
+		http.Error(w, "Invalid request body", http.StatusBadRequest)
+		return
+	}
+	log.Println("Received summary request")
+
+	// Prepare the prompt for summary generation
+	prompt := fmt.Sprintf("Please summarize the following text:\n\n%s", req.Prompt)
+
+	// Get completion from OpenAI
+	summary, err := getCompletion(client, model, prompt, systemPrompt)
+	if err != nil {
+		log.Printf("Error getting summary: %v", err)
+		http.Error(w, "Error getting summary: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("Summary generated successfully")
+
+	// Clean up the summary (remove any leading/trailing whitespace)
+	summary = strings.TrimSpace(summary)
+
+	// Return the summary as JSON
+	response := map[string]string{"summary": summary}
+	w.Header().Set("Content-Type", "application/json")
+	err = json.NewEncoder(w).Encode(response)
+	if err != nil {
+		log.Printf("Error encoding JSON response for summary: %v", err)
+		http.Error(w, "Error encoding response", http.StatusInternalServerError)
+		return
+	}
+	log.Println("Summary response sent successfully")
 }
