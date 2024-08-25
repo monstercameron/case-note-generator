@@ -168,7 +168,8 @@ func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Clie
 	prePrompt := fmt.Sprintf("Create a Jira Comment based on the following information strictly and only for the date of %s:", req.Date)
 	prompt := prePrompt + "\n" + req.Prompt
 
-	fmt.Println(prompt)
+	// print prompt for debugging
+	// fmt.Println(prompt)
 
 	// Get completion from OpenAI
 	completion, err := getCompletion(client, model, prompt, systemPrompt)
