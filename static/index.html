@@ -95,6 +95,95 @@
             right: 10px;
             z-index: 10;
         }
+
+        .collapsible {
+            background-color: #f1f1f1;
+            color: #444;
+            cursor: pointer;
+            padding: 18px;
+            width: 100%;
+            border: none;
+            text-align: left;
+            outline: none;
+            font-size: 15px;
+        }
+
+        .active, .collapsible:hover {
+            background-color: #ccc;
+        }
+
+        .content {
+            padding: 0 18px;
+            display: none;
+            overflow: hidden;
+            background-color: #f9f9f9;
+        }
+
+        .collapsible:after {
+            content: '\02795'; /* Unicode character for "plus" sign (+) */
+            font-size: 13px;
+            color: #777;
+            float: right;
+            margin-left: 5px;
+        }
+
+        .active:after {
+            content: "\2796"; /* Unicode character for "minus" sign (-) */
+        }
+
+        #logContent {
+            width: 100%;
+            height: 300px;
+            overflow-y: scroll;
+            background-color: #f0f0f0;
+            border: 1px solid #ccc;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #refreshLogButton {
+            margin-bottom: 10px;
+        }
+
+        #editSystemPrompt {
+            background-color: #1a202c;
+            color: #e2e8f0;
+        }
+
+        #promptSelect {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        #promptEditor {
+            background-color: #2d3748;
+            color: #e2e8f0;
+            border-color: #4a5568;
+            resize: vertical;
+        }
+
+        #loadPromptButton, #updatePrompt {
+            transition: background-color 0.3s ease;
+        }
+
+        #loadPromptButton {
+            background-color: #3182ce;
+        }
+
+        #loadPromptButton:hover {
+            background-color: #2c5282;
+        }
+
+        #updatePrompt {
+            background-color: #48bb78;
+        }
+
+        #updatePrompt:hover {
+            background-color: #38a169;
+        }
     </style>
 </head>
 <body class="bg-ukg-gray">
@@ -102,53 +191,113 @@
         <h1 class="text-white text-3xl font-bold text-center">HR Journeys Case Note Generator</h1>
     </nav>
     <div class="container mx-auto p-4">
-        <section class="mb-6">
-            <h2 class="text-2xl font-semibold text-gray-800">Instructions</h2>
-            <ol class="list-decimal list-inside text-lg text-gray-900 space-y-2">
-                <li>Upload your case notes:
-                    <ul class="list-disc list-inside ml-4">
-                        <li>Drag and drop text (.txt) or Markdown (.md) files into the box below, or</li>
-                        <li>Click "attach" to select files from your computer</li>
-                    </ul>
-                </li>
-                <li>Select the date for your case notes using the date picker</li>
-                <li>Click "Generate Jira Comment" to convert your notes to Jira Wiki Notation</li>
-                <li>The generated comment will appear in the output box below</li>
-                <li>Use the copy button in the top-right corner of the output box to copy the generated comment to your clipboard</li>
-            </ol>
-            <p class="mt-4 text-sm text-gray-700">This tool uses OpenAI's API to convert your Markdown notes into Jira Wiki Notation. For more information, please refer to the project's <a href="https://github.com/monstercameron/case-note-generator" class="text-blue-600 hover:underline" target="_blank">GitHub repository</a>.</p>
-        </section>
-        <section class="mb-6">
-            <div class="border-2 border-dashed border-ukg-green p-4 rounded-lg text-center">
-                <p class="text-lg text-gray-800">Drag and drop your text files here or <input id="fileInfo" type="file" class="hidden" id="fileInput" multiple /></p>
-                <label for="fileInput" class="cursor-pointer text-blue-600 underline text-lg">click to attach</label>
-            </div>
-        </section>
-        <div class="date-picker-container">
-            <input type="date" id="datePicker" class="date-picker">
-            <button id="generateJiraComment" class="generate-button mr-2">
-                Generate Jira Comment
-                <div class="spinner"></div>
-            </button>
-            <button id="generateJiraSummary" class="generate-button">
-                Generate Jira Summary
-                <div class="spinner"></div>
-            </button>
+        <button class="collapsible">Instructions</button>
+        <div class="content">
+            <section class="mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800">Instructions</h2>
+                <ol class="list-decimal list-inside text-lg text-gray-900 space-y-2">
+                    <li>Upload your case notes:
+                        <ul class="list-disc list-inside ml-4">
+                            <li>Drag and drop text (.txt) or Markdown (.md) files into the box below, or</li>
+                            <li>Click "attach" to select files from your computer</li>
+                        </ul>
+                    </li>
+                    <li>Select the date for your case notes using the date picker</li>
+                    <li>Click "Generate Jira Comment" to convert your notes to Jira Wiki Notation</li>
+                    <li>The generated comment will appear in the output box below</li>
+                    <li>Use the copy button in the top-right corner of the output box to copy the generated comment to your clipboard</li>
+                </ol>
+                <p class="mt-4 text-sm text-gray-700">This tool uses OpenAI's API to convert your Markdown notes into Jira Wiki Notation. For more information, please refer to the project's <a href="https://github.com/monstercameron/case-note-generator" class="text-blue-600 hover:underline" target="_blank">GitHub repository</a>.</p>
+            </section>
         </div>
-        <section>
-            <h2 class="text-2xl font-semibold text-gray-800">Jira Comment</h2>
-            <div class="output-container border border-gray-300 rounded-lg p-4">
-                <div class="overflow-auto h-full">
-                    <pre id="output" class="text-lg text-gray-900"></pre>
+
+        <button class="collapsible">Upload Files</button>
+        <div class="content">
+            <section class="mb-6">
+                <div class="border-2 border-dashed border-ukg-green p-4 rounded-lg text-center">
+                    <p class="text-lg text-gray-800">Drag and drop your text files here or <input id="fileInfo" type="file" class="hidden" id="fileInput" multiple /></p>
+                    <label for="fileInput" class="cursor-pointer text-blue-600 underline text-lg">click to attach</label>
                 </div>
-                <button id="copyButton" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                    </svg>
+            </section>
+        </div>
+
+        <button class="collapsible">Generate Comment</button>
+        <div class="content">
+            <div class="date-picker-container">
+                <input type="date" id="datePicker" class="date-picker">
+                <button id="generateJiraComment" class="generate-button mr-2">
+                    Generate Jira Comment
+                    <div class="spinner"></div>
+                </button>
+                <button id="generateJiraSummary" class="generate-button">
+                    Generate Jira Summary
+                    <div class="spinner"></div>
                 </button>
             </div>
-        </section>
+        </div>
+
+        <button class="collapsible">Jira Comment</button>
+        <div class="content">
+            <section>
+                <h2 class="text-2xl font-semibold text-gray-800">Jira Comment</h2>
+                <div class="output-container border border-gray-300 rounded-lg p-4">
+                    <div class="overflow-auto h-full">
+                        <pre id="output" class="text-lg text-gray-900"></pre>
+                    </div>
+                    <button id="copyButton" class="p-2 bg-gray-200 rounded-full hover:bg-gray-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <button class="collapsible">Edit System Prompt</button>
+        <div class="content">
+            <section class="mb-6">
+                <div id="editSystemPrompt" class="bg-gray-800 p-4 rounded-lg">
+                    <div class="flex items-center mb-4">
+                        <select id="promptSelect" class="flex-grow bg-gray-700 text-white border border-gray-600 rounded-md p-2 mr-2"></select>
+                        <button id="loadPromptButton" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded">
+                            Load Prompt
+                        </button>
+                    </div>
+                    <textarea id="promptEditor" class="w-full h-64 bg-gray-700 text-white border border-gray-600 rounded-md p-2 mb-4"></textarea>
+                    <button id="updatePrompt" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded">
+                        Save Changes
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <button class="collapsible">System Logs</button>
+        <div class="content">
+            <section class="mb-6">
+                <h2 class="text-2xl font-semibold text-gray-800 mb-4">System Logs</h2>
+                <button id="refreshLogButton" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    Refresh Logs
+                </button>
+                <pre id="logContent" class="mt-4"></pre>
+            </section>
+        </div>
     </div>
     <script src="/static/script/script.js"></script>
+    <script>
+        var coll = document.getElementsByClassName("collapsible");
+        var i;
+
+        for (i = 0; i < coll.length; i++) {
+            coll[i].addEventListener("click", function() {
+                this.classList.toggle("active");
+                var content = this.nextElementSibling;
+                if (content.style.display === "block") {
+                    content.style.display = "none";
+                } else {
+                    content.style.display = "block";
+                }
+            });
+        }
+    </script>
 </body>
 </html>

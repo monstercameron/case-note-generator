@@ -68,13 +68,13 @@ func main() {
 	// Read system prompt from file
 	systemPromptNotes, err := os.ReadFile("static/document/notes.prompt")
 	if err != nil {
-		log.Fatal("Error reading system prompt file:", err)
+		log.Fatal("Error reading system notes prompt file:", err)
 	}
 	log.Println("System prompt loaded successfully")
 
 	systemPromptSummary, err := os.ReadFile("static/document/summary.prompt")
 	if err != nil {
-		log.Fatal("Error reading system prompt file:", err)
+		log.Fatal("Error reading system summary prompt file:", err)
 	}
 	log.Println("System prompt loaded successfully")
 
@@ -97,6 +97,9 @@ func main() {
 	http.HandleFunc("POST /summary", logMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		summaryHandler(w, r, client, openaiAPIModel, string(systemPromptSummary))
 	}))
+
+	// Add the new log file route
+	http.HandleFunc("GET /logs", logMiddleware(logFileHandler))
 
 	// Get the PORT from environment variables, default to 8080 if not set
 	port := os.Getenv("PORT")
@@ -268,8 +271,15 @@ func systemPromptHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "File not found", http.StatusNotFound)
 			return
 		}
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write(content)
+		response := struct {
+			File    string `json:"file"`
+			Content string `json:"content"`
+		}{
+			File:    fileName,
+			Content: string(content),
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(response)
 	} else {
 		// Return list of *.prompt files
 		files, err := filepath.Glob(filepath.Join("static", "document", "*.prompt"))
@@ -428,4 +438,18 @@ func summaryHandler(w http.ResponseWriter, r *http.Request, client *openai.Clien
 		return
 	}
 	log.Println("Summary response sent successfully")
+}
+
+// logFileHandler serves the contents of logs/log.log as plain text
+func logFileHandler(w http.ResponseWriter, r *http.Request) {
+	logContent, err := os.ReadFile("logs/log.log")
+	if err != nil {
+		log.Printf("Error reading log file: %v", err)
+		http.Error(w, "Error reading log file", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.Write(logContent)
+	log.Println("Log file contents served successfully")
 }
