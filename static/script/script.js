@@ -424,14 +424,23 @@ const refreshLog = async (elements) => {
   }
 };
 
-// Collapsible sections functionality
-const collapsibles = document.getElementsByClassName("collapsible");
+/**
+ * Initializes collapsible functionality for elements with the "collapsible" class.
+ * When a collapsible element is clicked, it toggles its "active" state and
+ * shows or hides its associated content.
+ */
+const initializeCollapsibles = () => {
+    const collapsibles = document.getElementsByClassName("collapsible");
 
-Array.from(collapsibles).forEach(collapsible => {
-    collapsible.addEventListener("click", () => {
-        console.log("clicked");
-        collapsible.classList.toggle("active");
-        const content = collapsible.nextElementSibling;
-        content.style.display = content.style.display === "block" ? "none" : "block";
+    Array.from(collapsibles).forEach(collapsible => {
+        collapsible.addEventListener("click", () => {
+            console.log("clicked");
+            collapsible.classList.toggle("active");
+            const content = collapsible.nextElementSibling;
+            content.style.display = content.style.display === "block" ? "none" : "block";
+        });
     });
-});
+};
+
+// Call the function to initialize collapsibles
+initializeCollapsibles();
