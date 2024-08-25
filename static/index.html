@@ -5,193 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Case Notes</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/style/style.css"> <!-- Attach CSS -->
-    <style>
-        /* UKG Colors */
-        .ukg-green { background-color: #00866E; }
-        .ukg-light-green { background-color: #E6F4F1; }
-        .ukg-gray { background-color: #F5F5F5; }
-
-        .date-picker-container {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            margin: 20px 0;
-        }
-
-        .date-picker {
-            padding: 10px 15px;
-            font-size: 16px;
-            border: 2px solid #3498db;
-            border-radius: 5px;
-            outline: none;
-            transition: border-color 0.3s ease;
-        }
-
-        .date-picker:focus {
-            border-color: #2980b9;
-        }
-
-        .generate-button {
-            margin-left: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            background-color: #00866E;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-            position: relative;
-            padding-right: 40px; /* Make space for the spinner */
-        }
-
-        .generate-button:hover {
-            background-color: #006B58;
-        }
-
-        .generate-button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-        }
-
-        .spinner {
-            display: none;
-            position: absolute;
-            right: 10px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 20px;
-            height: 20px;
-            border: 3px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
-            border-top: 3px solid #fff;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: translateY(-50%) rotate(0deg); }
-            100% { transform: translateY(-50%) rotate(360deg); }
-        }
-
-        .generate-button.loading .spinner {
-            display: block;
-        }
-
-        #output {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            padding-right: 40px; /* Add space for the button */
-        }
-
-        .output-container {
-            position: relative;
-            height: 500px;
-        }
-
-        #copyButton {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            z-index: 10;
-        }
-
-        .collapsible {
-            background-color: #f1f1f1;
-            color: #444;
-            cursor: pointer;
-            padding: 18px;
-            width: 100%;
-            border: none;
-            text-align: left;
-            outline: none;
-            font-size: 15px;
-        }
-
-        .active, .collapsible:hover {
-            background-color: #ccc;
-        }
-
-        .content {
-            padding: 0 18px;
-            display: none;
-            overflow: hidden;
-            background-color: #f9f9f9;
-        }
-
-        .collapsible:after {
-            content: '\02795'; /* Unicode character for "plus" sign (+) */
-            font-size: 13px;
-            color: #777;
-            float: right;
-            margin-left: 5px;
-        }
-
-        .active:after {
-            content: "\2796"; /* Unicode character for "minus" sign (-) */
-        }
-
-        #logContent {
-            width: 100%;
-            height: 300px;
-            overflow-y: scroll;
-            background-color: #f0f0f0;
-            border: 1px solid #ccc;
-            padding: 10px;
-            font-family: monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-        }
-
-        #refreshLogButton {
-            margin-bottom: 10px;
-        }
-
-        #editSystemPrompt {
-            background-color: #1a202c;
-            color: #e2e8f0;
-        }
-
-        #promptSelect {
-            background-color: #2d3748;
-            color: #e2e8f0;
-            border-color: #4a5568;
-        }
-
-        #promptEditor {
-            background-color: #2d3748;
-            color: #e2e8f0;
-            border-color: #4a5568;
-            resize: vertical;
-        }
-
-        #loadPromptButton, #updatePrompt {
-            transition: background-color 0.3s ease;
-        }
-
-        #loadPromptButton {
-            background-color: #3182ce;
-        }
-
-        #loadPromptButton:hover {
-            background-color: #2c5282;
-        }
-
-        #updatePrompt {
-            background-color: #48bb78;
-        }
-
-        #updatePrompt:hover {
-            background-color: #38a169;
-        }
-    </style>
+    <link rel="stylesheet" href="/static/style/style.css">
 </head>
 <body class="bg-ukg-gray">
     <nav class="ukg-green p-4">
         <h1 class="text-white text-3xl font-bold text-center">HR Journeys Case Note Generator</h1>
     </nav>
+
     <div class="container mx-auto p-4">
-        <button class="collapsible">Instructions</button>
+
+        <button class="collapsible text-2xl font-extrabold">Instructions</button>
         <div class="content">
             <section class="mb-6">
                 <h2 class="text-2xl font-semibold text-gray-800">Instructions</h2>
@@ -211,18 +34,18 @@
             </section>
         </div>
 
-        <button class="collapsible">Upload Files</button>
-        <div class="content">
+        <button class="collapsible active text-2xl font-extrabold">Upload Files</button>
+        <div class="content" style="display: block;">
             <section class="mb-6">
-                <div class="border-2 border-dashed border-ukg-green p-4 rounded-lg text-center">
-                    <p class="text-lg text-gray-800">Drag and drop your text files here or <input id="fileInfo" type="file" class="hidden" id="fileInput" multiple /></p>
+                <div id="dropZone" class="border-2 border-dashed border-ukg-green p-4 rounded-lg text-center transition-all duration-300">
+                    <p class="text-lg text-gray-800">Drag and drop your text files here or <input id="fileInput" type="file" class="hidden" multiple /></p>
                     <label for="fileInput" class="cursor-pointer text-blue-600 underline text-lg">click to attach</label>
                 </div>
             </section>
         </div>
 
-        <button class="collapsible">Generate Comment</button>
-        <div class="content">
+        <button class="collapsible active text-2xl font-extrabold">Generate Comment</button>
+        <div class="content" style="display: block;">
             <div class="date-picker-container">
                 <input type="date" id="datePicker" class="date-picker">
                 <button id="generateJiraComment" class="generate-button mr-2">
@@ -236,8 +59,8 @@
             </div>
         </div>
 
-        <button class="collapsible">Jira Comment</button>
-        <div class="content">
+        <button class="collapsible active text-2xl font-extrabold">Jira Comment</button>
+        <div class="content" style="display: block;">
             <section>
                 <h2 class="text-2xl font-semibold text-gray-800">Jira Comment</h2>
                 <div class="output-container border border-gray-300 rounded-lg p-4">
@@ -253,7 +76,7 @@
             </section>
         </div>
 
-        <button class="collapsible">Edit System Prompt</button>
+        <button class="collapsible text-2xl font-extrabold">Edit System Prompt</button>
         <div class="content">
             <section class="mb-6">
                 <div id="editSystemPrompt" class="bg-gray-800 p-4 rounded-lg">
@@ -271,7 +94,7 @@
             </section>
         </div>
 
-        <button class="collapsible">System Logs</button>
+        <button class="collapsible text-2xl font-extrabold">System Logs</button>
         <div class="content">
             <section class="mb-6">
                 <h2 class="text-2xl font-semibold text-gray-800 mb-4">System Logs</h2>
@@ -281,23 +104,8 @@
                 <pre id="logContent" class="mt-4"></pre>
             </section>
         </div>
+
     </div>
     <script src="/static/script/script.js"></script>
-    <script>
-        var coll = document.getElementsByClassName("collapsible");
-        var i;
-
-        for (i = 0; i < coll.length; i++) {
-            coll[i].addEventListener("click", function() {
-                this.classList.toggle("active");
-                var content = this.nextElementSibling;
-                if (content.style.display === "block") {
-                    content.style.display = "none";
-                } else {
-                    content.style.display = "block";
-                }
-            });
-        }
-    </script>
 </body>
 </html>

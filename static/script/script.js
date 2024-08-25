@@ -14,7 +14,7 @@ function initializeApp() {
   
   console.log("All elements found");
   initializeDatePicker(elements.datePicker);
-  setupDragAndDrop(elements.dropArea);
+  setupFileUpload(elements);
   addEventListeners(elements);
   fetchSystemPrompts(elements.promptSelect);
 }
@@ -68,26 +68,37 @@ const initializeDatePicker = (datePicker) => {
  * Sets up drag and drop functionality for the specified area.
  * @param {HTMLElement} dropArea - The element to set up as a drop area.
  */
-const setupDragAndDrop = (dropArea) => {
-  const preventDefaults = (e) => {
+const setupFileUpload = (elements) => {
+  const dropZone = document.getElementById('dropZone');
+
+  dropZone.addEventListener('dragenter', (e) => {
     e.preventDefault();
-    e.stopPropagation();
-  };
-
-  const highlight = () => dropArea.classList.add("bg-ukg-light-blue");
-  const unhighlight = () => dropArea.classList.remove("bg-ukg-light-blue");
-
-  ["dragenter", "dragover", "dragleave", "drop"].forEach((eventName) => {
-    dropArea.addEventListener(eventName, preventDefaults, false);
-    document.body.addEventListener(eventName, preventDefaults, false);
+    dropZone.classList.add('file-hover-animation');
   });
 
-  ["dragenter", "dragover"].forEach((eventName) => {
-    dropArea.addEventListener(eventName, highlight, false);
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
   });
 
-  ["dragleave", "drop"].forEach((eventName) => {
-    dropArea.addEventListener(eventName, unhighlight, false);
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('file-hover-animation');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('file-hover-animation');
+    
+    // Trigger the drop animation
+    dropZone.classList.add('file-drop-animation');
+    setTimeout(() => {
+      dropZone.classList.remove('file-drop-animation');
+    }, 500);
+
+    handleFiles(e.dataTransfer.files, elements);
+  });
+
+  elements.fileInput.addEventListener('change', (e) => {
+    handleFiles(e.target.files, elements);
   });
 };
 
@@ -395,7 +406,7 @@ const loadSelectedPrompt = async (elements) => {
 };
 
 /**
- * Refreshes the log content.
+ * Refreshes the log content and scrolls to the bottom.
  * @param {Object} elements - The object containing DOM element references.
  */
 const refreshLog = async (elements) => {
@@ -404,8 +415,23 @@ const refreshLog = async (elements) => {
     if (!response.ok) throw new Error("Failed to fetch logs");
     const logs = await response.text();
     elements.logContent.textContent = logs;
+    
+    // Scroll to the bottom of the log content
+    elements.logContent.scrollTop = elements.logContent.scrollHeight;
   } catch (error) {
     console.error("Error fetching logs:", error);
     elements.logContent.textContent = "Error fetching logs. Please try again.";
   }
 };
+
+// Collapsible sections functionality
+const collapsibles = document.getElementsByClassName("collapsible");
+
+Array.from(collapsibles).forEach(collapsible => {
+    collapsible.addEventListener("click", () => {
+        console.log("clicked");
+        collapsible.classList.toggle("active");
+        const content = collapsible.nextElementSibling;
+        content.style.display = content.style.display === "block" ? "none" : "block";
+    });
+});
