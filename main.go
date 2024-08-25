@@ -15,6 +15,7 @@ import (
 
 	"github.com/joho/godotenv"
 	openai "github.com/sashabaranov/go-openai"
+	"github.com/shirou/gopsutil/cpu"
 )
 
 // GenerateRequest represents the structure of the incoming JSON request for generation.
@@ -164,7 +165,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request, client *openai.Clie
 	log.Printf("Received generate request for date: %s", req.Date)
 
 	// clear console
-	fmt.Println("\033[H\033[2J")
+	// fmt.Println("\033[H\033[2J")
 	prePrompt := fmt.Sprintf("Create a Jira Comment based on the following information strictly and only for the date of %s:", req.Date)
 	prompt := prePrompt + "\n" + req.Prompt
 
@@ -319,11 +320,14 @@ func systemPromptPostHandler(w http.ResponseWriter, r *http.Request) {
 
 // HealthData represents the structure of the health check response.
 type HealthData struct {
-	Status       string `json:"status"`
-	Version      string `json:"version"`
-	Uptime       string `json:"uptime"`
-	GoVersion    string `json:"goVersion"`
-	NumGoroutine int    `json:"numGoroutine"`
+	Status       string  `json:"status"`
+	Version      string  `json:"version"`
+	Uptime       string  `json:"uptime"`
+	GoVersion    string  `json:"goVersion"`
+	NumGoroutine int     `json:"numGoroutine"`
+	CpuUsage     float64 `json:"cpuUsage"`
+	CpuCount     int     `json:"cpuCount"`
+	MemUsageMB   float64 `json:"memUsageMB"`
 }
 
 var startTime = time.Now()
@@ -331,12 +335,25 @@ var startTime = time.Now()
 // healthHandler handles GET requests for the health check endpoint.
 // It returns a JSON payload with relevant health data about the application.
 func healthHandler(w http.ResponseWriter, r *http.Request) {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+
+	// Get CPU usage
+	cpuUsage, err := cpu.Percent(0, false)
+	if err != nil {
+		log.Printf("Error getting CPU usage: %v", err)
+		cpuUsage = []float64{0} // Default to 0 if there's an error
+	}
+
 	health := HealthData{
 		Status:       "OK",
 		Version:      "1.0.0", // You should replace this with your actual version
 		Uptime:       time.Since(startTime).String(),
 		GoVersion:    runtime.Version(),
 		NumGoroutine: runtime.NumGoroutine(),
+		CpuCount:     runtime.NumCPU(),
+		CpuUsage:     cpuUsage[0],
+		MemUsageMB:   float64(m.Alloc) / 1024 / 1024, // Convert bytes to MB
 	}
 
 	w.Header().Set("Content-Type", "application/json")
