@@ -42,10 +42,40 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            position: relative;
+            padding-right: 40px; /* Make space for the spinner */
         }
 
         .generate-button:hover {
             background-color: #006B58;
+        }
+
+        .generate-button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 3px solid #fff;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: translateY(-50%) rotate(0deg); }
+            100% { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        .generate-button.loading .spinner {
+            display: block;
         }
 
         #output {
@@ -69,12 +99,24 @@
 </head>
 <body class="bg-ukg-gray">
     <nav class="ukg-green p-4">
-        <h1 class="text-white text-3xl font-bold text-center">Case Notes</h1>
+        <h1 class="text-white text-3xl font-bold text-center">HR Journeys Case Note Generator</h1>
     </nav>
     <div class="container mx-auto p-4">
         <section class="mb-6">
             <h2 class="text-2xl font-semibold text-gray-800">Instructions</h2>
-            <p class="text-lg text-gray-900">Please drag and drop your text files below or click to attach them.</p>
+            <ol class="list-decimal list-inside text-lg text-gray-900 space-y-2">
+                <li>Upload your case notes:
+                    <ul class="list-disc list-inside ml-4">
+                        <li>Drag and drop text (.txt) or Markdown (.md) files into the box below, or</li>
+                        <li>Click "attach" to select files from your computer</li>
+                    </ul>
+                </li>
+                <li>Select the date for your case notes using the date picker</li>
+                <li>Click "Generate Jira Comment" to convert your notes to Jira Wiki Notation</li>
+                <li>The generated comment will appear in the output box below</li>
+                <li>Use the copy button in the top-right corner of the output box to copy the generated comment to your clipboard</li>
+            </ol>
+            <p class="mt-4 text-sm text-gray-700">This tool uses OpenAI's API to convert your Markdown notes into Jira Wiki Notation. For more information, please refer to the project's <a href="https://github.com/monstercameron/case-note-generator" class="text-blue-600 hover:underline" target="_blank">GitHub repository</a>.</p>
         </section>
         <section class="mb-6">
             <div class="border-2 border-dashed border-ukg-green p-4 rounded-lg text-center">
@@ -84,7 +126,10 @@
         </section>
         <div class="date-picker-container">
             <input type="date" id="datePicker" class="date-picker">
-            <button id="generateJiraComment" class="generate-button">Generate Jira Comment</button>
+            <button id="generateJiraComment" class="generate-button">
+                Generate Jira Comment
+                <div class="spinner"></div>
+            </button>
         </div>
         <section>
             <h2 class="text-2xl font-semibold text-gray-800">Jira Comment</h2>

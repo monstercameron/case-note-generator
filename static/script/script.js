@@ -99,6 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function generateJiraComment() {
     console.log("Generating Jira comment");
+    setLoadingState(true);
     try {
       const files = elements.fileInput.files;
       if (files.length === 0) {
@@ -140,6 +141,8 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Error:", error.message);
       elements.output.textContent = `Error: ${error.message}`;
+    } finally {
+      setLoadingState(false);
     }
   }
 
@@ -165,4 +168,18 @@ document.addEventListener("DOMContentLoaded", () => {
       reader.readAsText(file);
     });
   }
+
+  const generateButton = document.getElementById('generateJiraComment');
+
+  function setLoadingState(isLoading) {
+    if (isLoading) {
+      generateButton.classList.add('loading');
+      generateButton.disabled = true;
+    } else {
+      generateButton.classList.remove('loading');
+      generateButton.disabled = false;
+    }
+  }
+
+  generateButton.addEventListener('click', generateJiraComment);
 });
