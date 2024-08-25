@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     datePicker: document.getElementById("datePicker"),
     generateJiraCommentButton: document.getElementById("generateJiraComment"),
     copyButton: document.getElementById("copyButton"),
+    generateJiraSummaryButton: document.getElementById("generateJiraSummary"),
   };
 
   const missingElements = Object.entries(elements)
@@ -56,6 +57,10 @@ document.addEventListener("DOMContentLoaded", () => {
     generateJiraComment
   );
   elements.copyButton.addEventListener("click", copyToClipboard);
+  elements.generateJiraSummaryButton.addEventListener(
+    "click",
+    generateJiraSummary
+  );
 
   function preventDefaults(e) {
     e.preventDefault();
@@ -99,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function generateJiraComment() {
     console.log("Generating Jira comment");
-    setLoadingState(true);
+    setLoadingState(true, elements.generateJiraCommentButton);
     try {
       const files = elements.fileInput.files;
       if (files.length === 0) {
@@ -142,7 +147,47 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error:", error.message);
       elements.output.textContent = `Error: ${error.message}`;
     } finally {
-      setLoadingState(false);
+      setLoadingState(false, elements.generateJiraCommentButton);
+    }
+  }
+
+  async function generateJiraSummary() {
+    console.log("Generating Jira summary");
+    setLoadingState(true, elements.generateJiraSummaryButton);
+    try {
+      const files = elements.fileInput.files;
+      if (files.length === 0) {
+        throw new Error("No files selected");
+      }
+  
+      const fileContents = await Promise.all(
+        Array.from(files)
+          .filter((file) => file.type === "text/plain" || file.name.endsWith(".md"))
+          .map(readFile)
+      );
+  
+      console.log("Files read:", fileContents.length);
+  
+      const response = await fetch("/summary", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          prompt: fileContents.join("\n\n")
+        }),
+      });
+  
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+  
+      const result = await response.json();
+      elements.output.textContent = result.summary;
+      console.log("Jira summary generated");
+    } catch (error) {
+      console.error("Error:", error.message);
+      elements.output.textContent = `Error: ${error.message}`;
+    } finally {
+      setLoadingState(false, elements.generateJiraSummaryButton);
     }
   }
 
@@ -169,17 +214,13 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  const generateButton = document.getElementById('generateJiraComment');
-
-  function setLoadingState(isLoading) {
+  function setLoadingState(isLoading, button) {
     if (isLoading) {
-      generateButton.classList.add('loading');
-      generateButton.disabled = true;
+      button.classList.add('loading');
+      button.disabled = true;
     } else {
-      generateButton.classList.remove('loading');
-      generateButton.disabled = false;
+      button.classList.remove('loading');
+      button.disabled = false;
     }
   }
-
-  generateButton.addEventListener('click', generateJiraComment);
 });
