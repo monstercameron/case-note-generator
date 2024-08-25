@@ -17,6 +17,7 @@ function initializeApp() {
   setupFileUpload(elements);
   addEventListeners(elements);
   fetchSystemPrompts(elements.promptSelect);
+  setupCollapsibleSections();
 }
 
 /**
@@ -252,6 +253,7 @@ const generateJiraComment = async (elements) => {
     const { completion } = await response.json();
     elements.output.textContent = completion;
     console.log("Jira comment generated");
+    showToast();
   } catch (error) {
     console.error("Error:", error.message);
     elements.output.textContent = `Error: ${error.message}`;
@@ -288,6 +290,7 @@ const generateJiraSummary = async (elements) => {
     const result = await response.json();
     elements.output.textContent = result.summary;
     console.log("Jira summary generated");
+    showToast();
   } catch (error) {
     console.error("Error:", error.message);
     elements.output.textContent = `Error: ${error.message}`;
@@ -425,22 +428,40 @@ const refreshLog = async (elements) => {
 };
 
 /**
- * Initializes collapsible functionality for elements with the "collapsible" class.
- * When a collapsible element is clicked, it toggles its "active" state and
- * shows or hides its associated content.
+ * Sets up collapsible sections functionality.
+ * This function finds all elements with the class "collapsible" and adds
+ * click event listeners to toggle their visibility and active state.
  */
-const initializeCollapsibles = () => {
-    const collapsibles = document.getElementsByClassName("collapsible");
+const setupCollapsibleSections = () => {
+  const collapsibles = document.getElementsByClassName("collapsible");
 
-    Array.from(collapsibles).forEach(collapsible => {
-        collapsible.addEventListener("click", () => {
-            console.log("clicked");
-            collapsible.classList.toggle("active");
-            const content = collapsible.nextElementSibling;
-            content.style.display = content.style.display === "block" ? "none" : "block";
-        });
-    });
+  Array.from(collapsibles).forEach(collapsible => {
+    const toggleCollapsible = (event) => {
+      const target = event.currentTarget;
+      target.classList.toggle("active");
+      
+      const content = target.nextElementSibling;
+      content.style.display = content.style.display === "block" ? "none" : "block";
+    };
+
+    collapsible.addEventListener("click", toggleCollapsible);
+  });
 };
 
-// Call the function to initialize collapsibles
-initializeCollapsibles();
+/**
+ * Displays a toast notification for successful data loading.
+ * The toast appears for 3 seconds before fading out.
+ */
+function showToast() {
+    const toast = document.getElementById('toast');
+    toast.classList.remove('hidden');
+    setTimeout(() => {
+        toast.classList.remove('opacity-0');
+    }, 10);
+    setTimeout(() => {
+        toast.classList.add('opacity-0');
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 300);
+    }, 3000);
+}
